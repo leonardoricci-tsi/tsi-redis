@@ -131,3 +131,90 @@ RPUSH lista_temporaria "item1" "item2"
 EXPIRE lista_temporaria 10
 TTL lista_temporaria
 EXISTS lista_temporaria
+
+
+
+EXERCÍCIO 24 - DESAFIO
+
+Uma empresa desenvolveu um sistema web para gerenciamento de chamados técnicos internos. Todos os atendimentos realizados pelos usuários precisavam ser organizados em tempo real, já que muitos chamados chegavam simultaneamente e precisavam ser priorizados rapidamente.
+O principal problema enfrentado pela equipe era identificar quais usuários estavam realizando mais solicitações, quais chamados eram mais frequentes e quais tarefas ainda estavam pendentes de atendimento. Além disso, o sistema precisava manter um histórico recente das ações executadas sem sobrecarregar o banco principal da aplicação.
+Para resolver esse cenário, a equipe decidiu utilizar o Redis devido à sua velocidade e capacidade de manipulação de dados em memória.
+No fluxo criado:
+usuários são cadastrados no sistema;
+chamados são adicionados em filas de atendimento;
+atendimentos prioritários são inseridos no início da fila;
+tarefas concluídas são removidas automaticamente;
+logs recentes são armazenados em listas limitadas;
+o sistema contabiliza quantos chamados cada usuário realizou;
+sessões inválidas podem ser removidas rapidamente;
+verificações de existência e tipo de chave são utilizadas constantemente.
+
+# Cadastro de usuários usando HASH
+HSET usuario:1001 nome "João Silva" setor "TI"
+HSET usuario:1002 nome "Maria Souza" setor "Financeiro"
+# Consultar dados de um usuário
+HGETALL usuario:1001
+# Adicionando chamados no final da fila
+RPUSH fila_chamados "Chamado #001 - Computador não liga"
+RPUSH fila_chamados "Chamado #002 - Sistema lento"
+RPUSH fila_chamados "Chamado #003 - Erro no login"
+
+# Ver todos os chamados da fila
+LRANGE fila_chamados 0 -1
+# Adicionando chamado prioritário no início da fila
+LPUSH fila_chamados "Chamado #003 - Sem conexão com o banco-Urgente"
+# Verificar nova ordem da fila
+LRANGE fila_chamados 0 -1
+# Remover o primeiro chamado da fila, simulando atendimento concluído
+LPOP fila_chamados
+# Verificar fila após atendimento
+LRANGE fila_chamados 0 -1
+# Criando logs recentes do sistema
+LPUSH logs_sistema "Usuário 1001 abriu chamado"
+LPUSH logs_sistema "Usuário 1002 abriu chamado"
+LPUSH logs_sistema "Chamado prioritário adicionado"
+LPUSH logs_sistema "Chamado atendido"
+# Manter apenas os 5 logs mais recentes
+LTRIM logs_sistema 0 4
+# Visualizar logs
+LRANGE logs_sistema 0 -1
+# Contabilizar quantidade de chamados por usuário
+INCR chamados_usuario:1001
+INCR chamados_usuario:1001
+INCR chamados_usuario:1002
+
+# Consultar quantidade de chamados de um usuário
+GET chamados_usuario:1001
+GET chamados_usuario:1002
+# Criar sessão de login para usuário
+SET sessao:abc123 "usuario:1001"
+# Definir tempo de expiração da sessão em 30 minutos
+EXPIRE sessao:abc123 1800
+# Verificar tempo restante da sessão
+TTL sessao:abc123
+# Remover sessão inválida manualmente
+DEL sessao:abc123
+# Verificar se a sessão ainda existe
+EXISTS sessao:abc123
+# Verificar se uma chave existe
+EXISTS usuario:1001
+EXISTS fila_chamados
+# Verificar o tipo de dado de cada chave
+TYPE usuario:1001
+TYPE fila_chamados
+TYPE logs_sistema
+TYPE chamados_usuario:1001
+TYPE ranking_chamados
+# Contar quantos chamados ainda estão pendentes
+LLEN fila_chamados
+
+# Ver apenas os 3 primeiros chamados da fila
+LRANGE fila_chamados 0 2
+# Remover dados de teste, se necessário
+DEL usuario:1001
+DEL usuario:1002
+DEL fila_chamados
+DEL logs_sistema
+DEL chamados_usuario:1001
+DEL chamados_usuario:1002
+DEL ranking_chamados
